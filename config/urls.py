@@ -6,6 +6,7 @@ from django.conf.urls.static import static
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 urlpatterns = [
+    path('tinymce/', include('tinymce.urls')),  # TinyMCE URLs
     path('admin/', admin.site.urls),
     path('api/', include('content.urls')),
     path('api-auth/', include('rest_framework.urls')),

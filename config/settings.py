@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'django_cleanup.apps.CleanupConfig',  
     'storages',  
+    'tinymce',
     
     # Local apps
     'content.apps.ContentConfig',
@@ -146,8 +147,20 @@ IMAGE_MAX_DIMENSIONS = (1920, 1080)
 UPLOAD_PATHS = {
     'editor_uploads': 'publications/',  
     'featured_images': 'publications/', 
+    'temp_uploads': 'temp_uploads/',  # Para imágenes temporales
     'temp': 'uploads/temp/'
 }
+
+# Crear directorios necesarios
+import os
+MEDIA_DIRS = [
+    os.path.join(MEDIA_ROOT, UPLOAD_PATHS['editor_uploads']),
+    os.path.join(MEDIA_ROOT, UPLOAD_PATHS['featured_images']),
+    os.path.join(MEDIA_ROOT, UPLOAD_PATHS['temp_uploads']),
+    os.path.join(MEDIA_ROOT, UPLOAD_PATHS['temp'])
+]
+for dir_path in MEDIA_DIRS:
+    os.makedirs(dir_path, exist_ok=True)
 
 # Configuración de limpieza de archivos
 CLEANUP_KEEP_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp']
@@ -155,6 +168,39 @@ CLEANUP_IGNORE_PATTERNS = ['*.min.*']
 CLEANUP_EXCLUDE = [
     'uploads/featured/',
 ]
+
+# TinyMCE Configuration
+TINYMCE_DEFAULT_CONFIG = {
+    'height': 360,
+    'width': 'auto',
+    'cleanup_on_startup': True,
+    'custom_undo_redo_levels': 20,
+    'selector': 'textarea',
+    'theme': 'silver',
+    'plugins': '''
+        textcolor save link image media preview codesample contextmenu
+        table code lists fullscreen insertdatetime nonbreaking
+        contextmenu directionality searchreplace wordcount visualblocks
+        visualchars code fullscreen autolink lists charmap print hr
+        anchor pagebreak
+        ''',
+    'toolbar1': '''
+        fullscreen preview bold italic underline | fontselect,
+        fontsizeselect | forecolor backcolor | alignleft alignright |
+        aligncenter alignjustify | indent outdent | bullist numlist table |
+        | link image media | codesample |
+        ''',
+    'toolbar2': '''
+        visualblocks visualchars |
+        charmap hr pagebreak nonbreaking anchor | code |
+        ''',
+    'contextmenu': 'formats | link image',
+    'menubar': True,
+    'statusbar': True,
+}
+
+TINYMCE_SPELLCHECKER = True
+TINYMCE_COMPRESSOR = True
 
 # Cache settings
 CACHES = {

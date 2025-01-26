@@ -2,6 +2,7 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.utils.text import slugify
+from django.db.models import Q
 import os
 from django.conf import settings
 from urllib.parse import urlparse
@@ -132,21 +133,41 @@ class Publication(BaseModel):
         
 
 class Section(BaseModel):
-   title = models.CharField(max_length=200)
-   slug = models.SlugField(unique=True)
-   is_active = models.BooleanField(default=True)
-   order = models.PositiveIntegerField(default=0)
+    title = models.CharField(max_length=200)
+    slug = models.SlugField(unique=True)
+    is_active = models.BooleanField(default=True)
+    order = models.PositiveIntegerField(default=0)
 
-   class Meta:
-       ordering = ['order']
+    class Meta:
+        ordering = ['order']
+        # Añadir índice único case-insensitive para title
+        constraints = [
+            models.UniqueConstraint(
+                fields=['title'],
+                name='unique_title_case_insensitive',
+                violation_error_message="Ya existe una sección con este nombre (sin importar mayúsculas/minúsculas)."
+            )
+        ]
 
-   def save(self, *args, **kwargs):
-       if not self.slug:
-           self.slug = slugify(self.title)
-       super().save(*args, **kwargs)
+    def clean(self):
+        if self.title:
+            # Verificar si existe una sección con el mismo título (case-insensitive)
+            exists = Section.objects.filter(
+                Q(title__iexact=self.title)
+            ).exclude(pk=self.pk).exists()
+            
+            if exists:
+                raise ValidationError({
+                    'title': 'Ya existe una sección con este nombre (sin importar mayúsculas/minúsculas).'
+                })
 
-   def __str__(self):
-       return self.title
+    def save(self, *args, **kwargs):
+        self.full_clean()  # Ejecutar validaciones
+        self.slug = slugify(self.title)  # Siempre normalizar el slug
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.title
     
     
 

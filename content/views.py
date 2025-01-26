@@ -1,6 +1,7 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from django.core.exceptions import ValidationError
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -12,15 +13,33 @@ from .utils.image_handler import ImageHandler
 
 
 class SectionViewSet(viewsets.ModelViewSet):
-   queryset = Section.objects.all()
-   serializer_class = SectionSerializer
-   parser_classes = (JSONParser,)
-   
-   @action(detail=False, methods=['patch'])
-   def reorder(self, request):
-       for item in request.data:
-           Section.objects.filter(id=item['id']).update(order=item['order'])
-       return Response({'status': 'ok'})
+    queryset = Section.objects.all()
+    serializer_class = SectionSerializer
+    parser_classes = (JSONParser,)
+
+    def create(self, request, *args, **kwargs):
+        try:
+            return super().create(request, *args, **kwargs)
+        except ValidationError as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    def update(self, request, *args, **kwargs):
+        try:
+            return super().update(request, *args, **kwargs)
+        except ValidationError as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    @action(detail=False, methods=['patch'])
+    def reorder(self, request):
+        for item in request.data:
+            Section.objects.filter(id=item['id']).update(order=item['order'])
+        return Response({'status': 'ok'})
 
 class PublicationViewSet(viewsets.ModelViewSet):
    queryset = Publication.objects.all()
@@ -145,8 +164,7 @@ class ImageUploadView(APIView):
             image_file = request.FILES.get('image')
             if not image_file:
                 return Response({
-                    'error': 'No se proporcionó ninguna imagen',
-                    'success': 0
+                    'error': 'No se proporcionó ninguna imagen'
                 }, status=400)
 
             try:
@@ -156,7 +174,7 @@ class ImageUploadView(APIView):
                 # Procesar imagen
                 handler = ImageHandler(
                     image_file,
-                    directory=settings.UPLOAD_PATHS['editor_uploads']  # Esta clave existe y apunta a 'publications/'
+                    directory=settings.UPLOAD_PATHS['temp_uploads']  # Usar el path desde settings
                 )
                 relative_path = handler.process_image()
                 
@@ -164,14 +182,12 @@ class ImageUploadView(APIView):
                 image_url = request.build_absolute_uri(settings.MEDIA_URL + relative_path)
                 
                 return Response({
-                    'url': image_url,
-                    'uploaded': 1
+                    'url': image_url
                 })
                 
             except ValueError as e:
                 return Response({
-                    'error': str(e),
-                    'uploaded': 0
+                    'error': str(e)
                 }, status=400)
             
         except Exception as e:
@@ -179,6 +195,5 @@ class ImageUploadView(APIView):
             print("Error al procesar imagen:", str(e))
             print(traceback.format_exc())
             return Response({
-                'error': 'Error procesando la imagen',
-                'uploaded': 0
+                'error': 'Error procesando la imagen'
             }, status=500)
