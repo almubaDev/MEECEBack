@@ -124,9 +124,6 @@ CORS_ALLOW_METHODS = [
 # Configuración de archivos estáticos y media
 STATIC_URL = '/static/'
 STATIC_ROOT = '/home/mCEEE/mCEEE/static'
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static'),
-]
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = '/home/mCEEE/mCEEE/media'  # Ruta en PythonAnywhere
