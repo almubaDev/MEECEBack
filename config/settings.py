@@ -183,6 +183,7 @@ CLEANUP_EXCLUDE = [
 ]
 
 # TinyMCE Configuration
+TINYMCE_JS_URL = 'https://mceee.pythonanywhere.com/static/tinymce/tinymce.min.js'
 TINYMCE_DEFAULT_CONFIG = {
     'height': 360,
     'width': 'auto',
@@ -190,6 +191,8 @@ TINYMCE_DEFAULT_CONFIG = {
     'custom_undo_redo_levels': 20,
     'selector': 'textarea',
     'theme': 'silver',
+    'language': 'es',
+    'language_url': 'https://mceee.pythonanywhere.com/static/tinymce/langs/es.js',
     'plugins': '''
         textcolor save link image media preview codesample contextmenu
         table code lists fullscreen insertdatetime nonbreaking
