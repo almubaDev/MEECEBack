@@ -19,27 +19,47 @@ class SectionViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         try:
-            return super().create(request, *args, **kwargs)
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            self.perform_create(serializer)
+            headers = self.get_success_headers(serializer.data)
+            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
         except ValidationError as e:
-            return Response(
-                {'error': str(e)},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            # Capturar ValidationError de Django y convertirla a un formato de respuesta API
+            if hasattr(e, 'message_dict'):
+                detail = e.message_dict
+            else:
+                detail = {'non_field_errors': [str(e)]}
+            return Response({'detail': detail}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            # Capturar cualquier otra excepción
+            return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    def perform_create(self, serializer):
+        serializer.save()
 
     def update(self, request, *args, **kwargs):
         try:
             return super().update(request, *args, **kwargs)
         except ValidationError as e:
-            return Response(
-                {'error': str(e)},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            # Capturar ValidationError de Django
+            if hasattr(e, 'message_dict'):
+                detail = e.message_dict
+            else:
+                detail = {'non_field_errors': [str(e)]}
+            return Response({'detail': detail}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            # Capturar cualquier otra excepción
+            return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False, methods=['patch'])
     def reorder(self, request):
-        for item in request.data:
-            Section.objects.filter(id=item['id']).update(order=item['order'])
-        return Response({'status': 'ok'})
+        try:
+            for item in request.data:
+                Section.objects.filter(id=item['id']).update(order=item['order'])
+            return Response({'status': 'ok'})
+        except Exception as e:
+            return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 class PublicationViewSet(viewsets.ModelViewSet):
    queryset = Publication.objects.all()

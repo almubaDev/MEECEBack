@@ -8,6 +8,13 @@ class SectionSerializer(serializers.ModelSerializer):
         model = Section
         fields = ['id', 'title', 'slug', 'is_active', 'order', 'created_at']
         read_only_fields = ['created_at', 'slug']
+        
+    def validate_title(self, value):
+        # Verificar si existe otra sección con el mismo título (case-insensitive)
+        instance = self.instance
+        if Section.objects.filter(title__iexact=value).exclude(pk=instance.pk if instance else None).exists():
+            raise serializers.ValidationError("Ya existe una sección con este nombre (sin importar mayúsculas/minúsculas).")
+        return value
 
 class PublicationSerializer(serializers.ModelSerializer):
     section = SectionSerializer(read_only=True)

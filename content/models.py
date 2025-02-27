@@ -3,6 +3,7 @@ from django.db import models
 from django.contrib.auth import get_user_model
 from django.utils.text import slugify
 from django.db.models import Q
+from django.core.exceptions import ValidationError
 import os
 from django.conf import settings
 from urllib.parse import urlparse
@@ -140,12 +141,10 @@ class Section(BaseModel):
 
     class Meta:
         ordering = ['order']
-        # Añadir índice único case-insensitive para title
         constraints = [
             models.UniqueConstraint(
                 fields=['title'],
-                name='unique_title_case_insensitive',
-                violation_error_message="Ya existe una sección con este nombre (sin importar mayúsculas/minúsculas)."
+                name='unique_title_case_insensitive'
             )
         ]
 
@@ -162,9 +161,13 @@ class Section(BaseModel):
                 })
 
     def save(self, *args, **kwargs):
-        self.full_clean()  # Ejecutar validaciones
-        self.slug = slugify(self.title)  # Siempre normalizar el slug
-        super().save(*args, **kwargs)
+        try:
+            self.full_clean()  # Ejecutar validaciones
+            self.slug = slugify(self.title)  # Siempre normalizar el slug
+            super().save(*args, **kwargs)
+        except ValidationError as e:
+            # Capturar el error pero permitir que se propague
+            raise
 
     def __str__(self):
         return self.title
