@@ -4,8 +4,8 @@ from rest_framework.viewsets import ReadOnlyModelViewSet
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import AllowAny
-from .models import Publication
-from .serializers import PublicPublicationSerializer
+from .models import Publication, Biography
+from .serializers import PublicPublicationSerializer, PublicBiographySerializer
 from django.shortcuts import get_object_or_404
 
 class PublicPublicationViewSet(ReadOnlyModelViewSet):
@@ -37,3 +37,12 @@ class PublicPublicationDetailView(APIView):
             context={'request': request}  # Añadimos el contexto
         )
         return Response(serializer.data)
+
+# Nueva vista para biografías públicas
+class PublicBiographyViewSet(ReadOnlyModelViewSet):
+    permission_classes = [AllowAny]
+    serializer_class = PublicBiographySerializer
+    
+    def get_queryset(self):
+        # Solo mostrar biografías activas al público
+        return Biography.objects.filter(is_active=True).order_by('order', 'name')
