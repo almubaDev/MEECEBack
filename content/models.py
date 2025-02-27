@@ -135,7 +135,7 @@ class Publication(BaseModel):
 
 class Section(BaseModel):
     title = models.CharField(max_length=200)
-    slug = models.SlugField(unique=True)
+    slug = models.SlugField(unique=True, blank=True)  # Permitir que esté en blanco inicialmente
     is_active = models.BooleanField(default=True)
     order = models.PositiveIntegerField(default=0)
 
@@ -161,13 +161,19 @@ class Section(BaseModel):
                 })
 
     def save(self, *args, **kwargs):
-        try:
-            self.full_clean()  # Ejecutar validaciones
-            self.slug = slugify(self.title)  # Siempre normalizar el slug
-            super().save(*args, **kwargs)
-        except ValidationError as e:
-            # Capturar el error pero permitir que se propague
-            raise
+        # Generar slug automáticamente si no se proporciona o está vacío
+        if not self.slug and self.title:
+            self.slug = slugify(self.title)
+            
+        # Asegurarnos de que el slug sea único
+        if self.slug:
+            orig_slug = self.slug
+            counter = 1
+            while Section.objects.filter(slug=self.slug).exclude(pk=self.pk).exists():
+                self.slug = f"{orig_slug}-{counter}"
+                counter += 1
+                
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.title

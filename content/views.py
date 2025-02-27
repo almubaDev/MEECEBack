@@ -10,6 +10,7 @@ from .serializers import SectionSerializer, PublicationSerializer, BiographySeri
 from rest_framework.views import APIView
 from django.conf import settings
 from .utils.image_handler import ImageHandler
+from django.utils.text import slugify
 
 
 class SectionViewSet(viewsets.ModelViewSet):
@@ -21,36 +22,53 @@ class SectionViewSet(viewsets.ModelViewSet):
         try:
             serializer = self.get_serializer(data=request.data)
             serializer.is_valid(raise_exception=True)
+            
+            # Asignamos manualmente created_by
             self.perform_create(serializer)
+            
             headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
         except ValidationError as e:
-            # Capturar ValidationError de Django y convertirla a un formato de respuesta API
             if hasattr(e, 'message_dict'):
                 detail = e.message_dict
             else:
                 detail = {'non_field_errors': [str(e)]}
             return Response({'detail': detail}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            # Capturar cualquier otra excepción
+            import traceback
+            print("Error creating section:", str(e))
+            print(traceback.format_exc())
             return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
     def perform_create(self, serializer):
-        serializer.save()
+        # Aseguramos que created_by sea el usuario actual
+        serializer.save(created_by=self.request.user)
 
     def update(self, request, *args, **kwargs):
         try:
-            return super().update(request, *args, **kwargs)
+            partial = kwargs.pop('partial', False)
+            instance = self.get_object()
+            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            serializer.is_valid(raise_exception=True)
+            
+            # No sobrescribir created_by en actualizaciones
+            self.perform_update(serializer)
+            
+            return Response(serializer.data)
         except ValidationError as e:
-            # Capturar ValidationError de Django
             if hasattr(e, 'message_dict'):
                 detail = e.message_dict
             else:
                 detail = {'non_field_errors': [str(e)]}
             return Response({'detail': detail}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
-            # Capturar cualquier otra excepción
+            import traceback
+            print("Error updating section:", str(e))
+            print(traceback.format_exc())
             return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    
+    def perform_update(self, serializer):
+        serializer.save()
 
     @action(detail=False, methods=['patch'])
     def reorder(self, request):
