@@ -183,7 +183,7 @@ class Section(BaseModel):
 class Biography(BaseModel):
     name = models.CharField(max_length=150)
     position = models.CharField(max_length=150)
-    biography = models.TextField(max_length=500)
+    biography = models.TextField(max_length=3000)
     photo = models.ImageField(upload_to='biographys/', blank=True, null=True)
     email = models.EmailField(blank=True)
     linkedin = models.URLField(blank=True)
